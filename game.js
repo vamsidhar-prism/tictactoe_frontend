@@ -5,14 +5,14 @@ function playSound(id) {
   if (!audio) return;
 
   audio.currentTime = 0;
-  audio.play().catch(() => {});
+  audio.play().catch(() => { });
 }
 
 
 class TicTacToeClient {
   constructor() {
     this.socket = null;
-    this.user = this.createGuestUser();
+    this.user = null;
     this.roomId = null;
     this.playerSymbol = null;
     this.board = Array(9).fill(null);
@@ -21,8 +21,8 @@ class TicTacToeClient {
 
     this.cacheDom();
     this.setupDomListeners();
-    this.updatePlayerNameLabel();
-    this.connectToServer();
+    // this.updatePlayerNameLabel(); // Will be called after login
+    // this.connectToServer(); // Will be called after login
   }
 
   createGuestUser() {
@@ -39,6 +39,10 @@ class TicTacToeClient {
     this.roomCodeInput = document.getElementById("roomCodeInput");
     this.joinWithCodeBtn = document.getElementById("joinWithCodeBtn");
     this.cancelJoinBtn = document.getElementById("cancelJoinBtn");
+
+    this.loginModal = document.getElementById("loginModal");
+    this.usernameInput = document.getElementById("usernameInput");
+    this.loginBtn = document.getElementById("loginBtn");
 
     this.playerNameEl = document.getElementById("playerName");
     this.currentRoomLabel = document.getElementById("currentRoomLabel");
@@ -72,6 +76,11 @@ class TicTacToeClient {
       if (e.key === "Enter") this.joinRoom();
     });
 
+    this.loginBtn.addEventListener("click", () => this.handleLogin());
+    this.usernameInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") this.handleLogin();
+    });
+
     this.playAgainBtn.addEventListener("click", () => this.requestRematch());
     this.playAgainFromGameOverBtn.addEventListener("click", () => this.requestRematch());
     this.leaveRoomBtn.addEventListener("click", () => this.leaveRoom());
@@ -83,7 +92,7 @@ class TicTacToeClient {
   }
 
   connectToServer() {
-    const wsUrl = window.WEBSOCKET_URL; 
+    const wsUrl = window.WEBSOCKET_URL;
     this.socket = io(wsUrl, { transports: ["websocket", "polling"] });
 
     this.socket.on("connect", () => {
@@ -159,7 +168,7 @@ class TicTacToeClient {
     document.querySelectorAll(".knife-slash").forEach((el) => el.remove());
     // Remove all temporary effects
     document.querySelectorAll(".rain-drop, .sad-emoji, .firework-particle, .balloon, .confetti").forEach(el => el.remove());
-    
+
     this.gameOverEl.style.display = "none";
     this.gameOverTitle.className = "";
   }
@@ -227,7 +236,7 @@ class TicTacToeClient {
       this.currentPlayerText.style.color = "#ff4757";
     }
   }
-  
+
   // --- GAME OVER LOGIC ---
   handleGameOver(winnerSymbol, isDraw) {
     let title = "Draw!";
@@ -244,27 +253,27 @@ class TicTacToeClient {
       } else {
         // PLAYER LOST
         title = "DEFEATED";
-        msg = "Don't be sad! Try again one more time?"; 
+        msg = "Don't be sad! Try again one more time?";
         this.gameOverTitle.className = "lose-title";
         this.playAgainFromGameOverBtn.classList.add("pulse-btn");
         playSound("loseSound");
         triggerLossEffects();
       }
     } else {
-      this.gameOverTitle.className = "lose-title"; 
+      this.gameOverTitle.className = "lose-title";
     }
 
     if (!isDraw && winnerSymbol) {
-  const winningCombo = this.getWinningCombination(this.board, winnerSymbol);
+      const winningCombo = this.getWinningCombination(this.board, winnerSymbol);
 
-  if (winningCombo) {
-    setTimeout(() => {
-      playSound("knifeSound");
-      this.drawKnifeSlash(winningCombo);
-      document.body.classList.add("shake-hard");
-    }, 200);
-  }
-}
+      if (winningCombo) {
+        setTimeout(() => {
+          playSound("knifeSound");
+          this.drawKnifeSlash(winningCombo);
+          document.body.classList.add("shake-hard");
+        }, 200);
+      }
+    }
 
 
     setTimeout(() => {
@@ -292,7 +301,7 @@ class TicTacToeClient {
     slash.className = "knife-slash";
 
     const [a, b, c] = indices;
-    
+
     // Original coordinate logic
     let top = 0, left = 0, width = "100%", rotate = 0, origin = "left center";
 
@@ -300,31 +309,31 @@ class TicTacToeClient {
     if (a === 0 && c === 2) { top = "16.5%"; left = "0"; }
     else if (a === 3 && c === 5) { top = "50%"; left = "0"; }
     else if (a === 6 && c === 8) { top = "83.5%"; left = "0"; }
-    
+
     // COLUMNS
     else if (a === 0 && c === 6) { left = "16.5%"; top = "0"; width = "100%"; rotate = 90; origin = "left top"; }
     else if (a === 1 && c === 7) { left = "50%"; top = "0"; width = "100%"; rotate = 90; origin = "left top"; }
     else if (a === 2 && c === 8) { left = "83.5%"; top = "0"; width = "100%"; rotate = 90; origin = "left top"; }
-    
+
     // DIAGONALS
     // Fix: Increased width to 155% and added negative offset to cut through corners
-    else if (a === 0 && c === 8) { 
-        top = "65px"; left = "55px"; width = "155%"; rotate = 45; origin = "top left"; 
+    else if (a === 0 && c === 8) {
+      top = "65px"; left = "55px"; width = "155%"; rotate = 45; origin = "top left";
     }
-    else if (a === 2 && c === 6) { 
-    top = "45px";
-    left = "calc(100% - 55px)";
-    width = "155%";
-    rotate = 135;
-    origin = "top left";
-  }
+    else if (a === 2 && c === 6) {
+      top = "45px";
+      left = "calc(100% - 55px)";
+      width = "155%";
+      rotate = 135;
+      origin = "top left";
+    }
 
-    slash.style.top = top; 
-    slash.style.left = left; 
+    slash.style.top = top;
+    slash.style.left = left;
     slash.style.width = width;
-    slash.style.transform = `rotate(${rotate}deg)`; 
+    slash.style.transform = `rotate(${rotate}deg)`;
     slash.style.transformOrigin = origin;
-    
+
     boardEl.appendChild(slash);
   }
 
@@ -344,12 +353,43 @@ class TicTacToeClient {
   }
   requestRematch() { if (!this.roomId) return; this.socket.emit("requestRematch", { roomId: this.roomId }); }
   leaveRoom() { if (this.roomId) { this.socket.emit("leaveRoom", { roomId: this.roomId }); } window.location.reload(); }
+
   showNotification(message, type = "info") {
     const el = document.createElement("div");
     el.className = `notification ${type}`;
     el.innerHTML = `<span>${message}</span>`;
     this.notifications.appendChild(el);
     setTimeout(() => el.remove(), 4000);
+  }
+
+  async handleLogin() {
+    const username = this.usernameInput.value.trim();
+    if (!username) {
+      this.showNotification("Please enter a name", "warning");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${window.WEBSOCKET_URL}/api/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+
+      if (!res.ok) throw new Error("Registration failed");
+
+      const data = await res.json();
+      this.user = data;
+
+      this.loginModal.classList.add("hidden");
+      this.updatePlayerNameLabel();
+      this.connectToServer();
+      this.showNotification(`Welcome, ${this.user.username}!`, "success");
+
+    } catch (err) {
+      console.error(err);
+      this.showNotification("Login failed. Try again.", "error");
+    }
   }
 }
 
@@ -368,15 +408,15 @@ function triggerWinEffects() {
 function triggerLossEffects() {
   // Add gloomy class
   document.body.classList.add("gloomy");
-  
+
   // Activate Glitch effect (The board jitters)
   const board = document.getElementById("gameBoard");
   board.classList.add("glitch-active");
 
   setTimeout(() => {
-      document.body.classList.remove("gloomy");
-      board.classList.remove("glitch-active");
-  }, 4000); 
+    document.body.classList.remove("gloomy");
+    board.classList.remove("glitch-active");
+  }, 4000);
 
   launchRain();
   launchSadEmojis(); // <--- Now calls the Massive version
@@ -387,25 +427,25 @@ function triggerLossEffects() {
 function launch3DBalloons() {
   const container = document.getElementById("animationsContainer");
   const colors = ["#e84393", "#0984e3", "#00b894", "#fdcb6e", "#6c5ce7", "#ff7675"];
-  
+
   // INCREASED: 60 balloons (was 40)
   for (let i = 0; i < 60; i++) {
     const b = document.createElement("div");
     b.className = "balloon";
     b.style.left = Math.random() * 95 + "vw";
     b.style.setProperty('--b-color', colors[Math.floor(Math.random() * colors.length)]);
-    b.style.animationDuration = (2 + Math.random() * 2) + "s"; 
+    b.style.animationDuration = (2 + Math.random() * 2) + "s";
     b.style.animationDelay = Math.random() * 1 + "s";
     container.appendChild(b);
-    setTimeout(() => b.remove(), 4000); 
+    setTimeout(() => b.remove(), 4000);
   }
 }
 
 function launchPhysicsFireworks() {
   // INCREASED: 20 Explosions (was 10)
   for (let i = 0; i < 20; i++) {
-    setTimeout(() => { 
-        spawnExplosion(Math.random() * window.innerWidth, Math.random() * (window.innerHeight * 0.7)); 
+    setTimeout(() => {
+      spawnExplosion(Math.random() * window.innerWidth, Math.random() * (window.innerHeight * 0.7));
     }, i * 250);
   }
 }
@@ -414,20 +454,20 @@ function spawnExplosion(x, y) {
   const container = document.getElementById("animationsContainer");
   const colors = ["#FF0099", "#00FFFF", "#FFFF00", "#33FF00", "#FF6600", "#9D00FF", "#ffffff"];
   const color = colors[Math.floor(Math.random() * colors.length)];
-  
+
   // INCREASED: 80 particles per explosion (was 50)
-  for (let k = 0; k < 80; k++) { 
+  for (let k = 0; k < 80; k++) {
     const p = document.createElement("div");
     p.className = "firework-particle";
-    p.style.color = color; 
+    p.style.color = color;
     p.style.left = x + "px"; p.style.top = y + "px";
-    
+
     const angle = Math.random() * Math.PI * 2;
-    const velocity = 60 + Math.random() * 220; 
+    const velocity = 60 + Math.random() * 220;
     const tx = Math.cos(angle) * velocity;
     const ty = Math.sin(angle) * velocity + 200;
     p.style.setProperty("--tx", `${tx}px`); p.style.setProperty("--ty", `${ty}px`);
-    
+
     container.appendChild(p);
     setTimeout(() => p.remove(), 1600);
   }
@@ -436,7 +476,7 @@ function spawnExplosion(x, y) {
 function launch3DConfetti() {
   const container = document.getElementById("animationsContainer");
   const colors = ["#d63031", "#e17055", "#0984e3", "#6c5ce7", "#00b894", "#fdcb6e"];
-  
+
   // INCREASED: 300 Confetti pieces (was 100)
   for (let i = 0; i < 300; i++) {
     const c = document.createElement("div");
@@ -445,7 +485,7 @@ function launch3DConfetti() {
     c.style.setProperty('--c-color', colors[Math.floor(Math.random() * colors.length)]);
     c.style.animationDuration = (1.5 + Math.random() * 2.5) + "s";
     container.appendChild(c);
-    setTimeout(() => c.remove(), 4000); 
+    setTimeout(() => c.remove(), 4000);
   }
 }
 
@@ -465,30 +505,30 @@ function launchRain() {
 
 function launchSadEmojis() {
   const container = document.getElementById("animationsContainer");
-  
+
   // ADDED: More "Defeat" specific icons (Clown, Flag, Chart Down)
   const emojis = ["😭", "😢", "💔", "🌧️", "😩", "🥀", "💀", "👎", "🤡", "📉", "🏳️", "🫣"];
-  
+
   // INCREASED: From 60 -> 200 (Total flood of emojis)
   for (let i = 0; i < 200; i++) {
     const e = document.createElement("div");
     e.className = "sad-emoji";
     e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    
+
     // Spread across the entire width
     e.style.left = Math.random() * 100 + "vw";
-    
+
     // VARIETY: Some are huge (6rem), some are small (2rem)
     e.style.fontSize = (2 + Math.random() * 4) + "rem";
-    
+
     // TIMING: Fall at different speeds (1s to 4s)
-    e.style.animationDuration = (1.5 + Math.random() * 2.5) + "s"; 
-    
+    e.style.animationDuration = (1.5 + Math.random() * 2.5) + "s";
+
     // DELAY: Stagger them so they don't all appear at once
-    e.style.animationDelay = Math.random() * 2 + "s"; 
-    
+    e.style.animationDelay = Math.random() * 2 + "s";
+
     container.appendChild(e);
-    
+
     // Cleanup
     setTimeout(() => e.remove(), 5000);
   }
@@ -499,11 +539,11 @@ function triggerThunder() {
   flash.className = "thunder-flash";
   document.body.appendChild(flash);
   setTimeout(() => flash.remove(), 250);
-  
+
   setTimeout(() => {
-     const flash2 = document.createElement("div");
-     flash2.className = "thunder-flash";
-     document.body.appendChild(flash2);
-     setTimeout(() => flash2.remove(), 250);
+    const flash2 = document.createElement("div");
+    flash2.className = "thunder-flash";
+    document.body.appendChild(flash2);
+    setTimeout(() => flash2.remove(), 250);
   }, 400);
 }
